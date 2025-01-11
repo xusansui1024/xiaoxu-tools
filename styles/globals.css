@@ -1,0 +1,7 @@
+.logo {
+  mix-blend-mode: darken;
+  
+  @media (prefers-color-scheme: dark) {
+    mix-blend-mode: normal; /* 在暗色模式下使用正常混合模式 */
+  }
+} 

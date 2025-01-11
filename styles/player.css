@@ -1,0 +1,23 @@
+/* 广告容器 */
+[class*="ad"], [class*="game"], [class*="guanggao"],
+[id*="ad"], [id*="game"], [id*="guanggao"],
+[src*="hmjs/"], [src*="bmlVVBzNDc1M"], [src*="Fil2OWlwn"],
+[class*="video-tfjs"], [class*="random-btn"], [class*="player-list-off"],
+div[style*="position: absolute"][style*="z-index"],
+div[style*="width: 100%"][style*="height"],
+.video-mask, .video-overlay, .pause-mask {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    position: absolute !important;
+    z-index: -9999 !important;
+}
+
+/* 视频播放器 */
+#videoPlayer {
+    z-index: 2147483647 !important;
+    position: relative !important;
+} 

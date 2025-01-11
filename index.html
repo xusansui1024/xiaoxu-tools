@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="images/shinchan.png" type="image/png">
+    <link rel="shortcut icon" href="images/shinchan.png" type="image/png">
+    <title>视频解析工具2</title>
+    <style>
+        body {
+            background-color: #f0f7f4;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            color: #2c4a3c;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        h1 {
+            color: #2c4a3c;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+        .input-group {
+            margin-bottom: 25px;
+            background-color: #f8faf9;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #d0e6d9;
+        }
+        #videoUrl {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 2px solid #a8d5bb;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        #videoUrl:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        #parseButton {
+            width: 100%;
+            padding: 12px 24px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+        #parseButton:hover {
+            background-color: #45a049;
+        }
+        #parseButton:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #videoPlayer {
+            width: 100%;
+            height: 500px;
+            border: none;
+            border-radius: 8px;
+            background-color: #f8faf9;
+            margin-top: 20px;
+        }
+        .loading {
+            display: none;
+            margin: 15px 0;
+            color: #2c4a3c;
+            text-align: center;
+            padding: 10px;
+            background-color: #e8f5e9;
+            border-radius: 6px;
+        }
+        .message {
+            display: none;
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .message.error {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        .message.success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        #apiStatus {
+            font-size: 14px;
+            color: #557b6c;
+            margin-top: 10px;
+            text-align: center;
+        }
+        .tip {
+            color: #557b6c;
+            margin-top: 10px;
+            font-size: 14px;
+            text-align: center;
+        }
+        small {
+            color: #557b6c;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #d0e6d9;
+            color: #557b6c;
+            font-size: 14px;
+        }
+        .crayon-decoration {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            pointer-events: none;
+        }
+        
+        .shinchan-left {
+            left: -140px;
+            top: 50%;
+            transform: translateY(-50%);
+            background-image: url('https://api.iconify.design/emojione-monotone:crayon.svg?color=%234CAF50');
+            animation: float-left 3s ease-in-out infinite;
+        }
+        
+        .shinchan-right {
+            right: -140px;
+            top: 50%;
+            transform: translateY(-50%) scaleX(-1);
+            background-image: url('https://api.iconify.design/emojione-monotone:crayon.svg?color=%234CAF50');
+            animation: float-right 3s ease-in-out infinite;
+        }
+        
+        .shinchan-header {
+            text-align: center;
+            font-size: 24px;
+            color: #4CAF50;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            margin: 10px 0;
+            padding: 5px 15px;
+            white-space: nowrap;
+        }
+        
+        @keyframes float-left {
+            0%, 100% { transform: translateY(-50%) rotate(-5deg); }
+            50% { transform: translateY(-60%) rotate(5deg); }
+        }
+        
+        @keyframes float-right {
+            0%, 100% { transform: translateY(-50%) scaleX(-1) rotate(5deg); }
+            50% { transform: translateY(-60%) scaleX(-1) rotate(-5deg); }
+        }
+        
+        .crayon-border {
+            border: 3px solid #a8d5bb;
+            border-style: dashed;
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            bottom: -10px;
+            border-radius: 15px;
+            pointer-events: none;
+        }
+        
+        .shinchan-footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 24px;
+            color: #4CAF50;
+        }
+        
+        .footer {
+            position: relative;
+            padding: 20px;
+            margin-top: 30px;
+        }
+        
+        .footer::before,
+        .footer::after {
+            content: "✏️";
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+        
+        .footer::before {
+            left: 20%;
+        }
+        
+        .footer::after {
+            right: 20%;
+        }
+        
+        .shinchan-image-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            background-color: #e8f5e9 !important;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.1) !important;
+            z-index: 2;
+            isolation: isolate;
+        }
+
+        .shinchan-image {
+            height: 200px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            filter: brightness(1) contrast(1);
+            mix-blend-mode: darken;
+        }
+
+        .shinchan-image:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1) contrast(1.1);
+        }
+
+        .image-decoration {
+            position: absolute;
+            font-size: 24px;
+            color: #4CAF50;
+            opacity: 0.2;
+        }
+
+        .decoration-left {
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .decoration-right {
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px auto;
+                padding: 15px;
+                width: 95%;
+            }
+            
+            h1 {
+                font-size: 22px;
+            }
+            
+            .shinchan-header {
+                font-size: 20px;
+                margin: 5px 0;
+                padding: 3px 10px;
+            }
+            
+            /* 在移动端隐藏装饰元素 */
+            .crayon-decoration {
+                display: none;
+            }
+            
+            #videoPlayer {
+                height: 240px;  /* 移动端降低播放器高度 */
+            }
+            
+            .shinchan-image {
+                height: 150px;  /* 移动端降低图片高度 */
+            }
+            
+            .footer::before,
+            .footer::after {
+                display: none;  /* 隐藏页脚装饰 */
+            }
+            
+            #parseButton {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            #videoUrl {
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .tip {
+                font-size: 12px;
+            }
+        }
+        
+        /* 针对超小屏幕的优化 */
+        @media (max-width: 320px) {
+            .container {
+                margin: 10px 5px;
+                padding: 15px 10px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .shinchan-header {
+                font-size: 16px;
+            }
+        }
+        
+        /* 添加历史记录样式 */
+        .history-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8faf9;
+            border-radius: 8px;
+            border: 1px solid #d0e6d9;
+        }
+        
+        .history-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+        }
+        
+        .history-item:hover {
+            background-color: #e8f5e9;
+        }
+        
+        .history-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .history-time {
+            color: #666;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .favorite-button {
+            padding: 12px 24px;
+            background-color: #FF9800;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s ease;
+        }
+        
+        .favorite-button:hover {
+            background-color: #F57C00;
+        }
+        
+        .favorites-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #fff3e0;
+            border-radius: 8px;
+            border: 1px solid #ffe0b2;
+        }
+        
+        .favorites-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .favorite-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ffe0b2;
+            cursor: pointer;
+        }
+        
+        .favorite-item:hover {
+            background-color: #fff8e1;
+        }
+        
+        .favorite-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .remove-favorite {
+            background: none;
+            border: none;
+            color: #f44336;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 5px;
+        }
+        
+        .remove-favorite:hover {
+            color: #d32f2f;
+        }
+        
+        .quality-selector {
+            padding: 12px;
+            border: 2px solid #a8d5bb;
+            border-radius: 6px;
+            background-color: white;
+            color: #2c4a3c;
+            font-size: 16px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        
+        .quality-selector:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+        
+        .quality-selector option {
+            padding: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .quality-selector {
+                padding: 8px;
+                font-size: 14px;
+            }
+        }
+        
+        .speed-selector,
+        .source-selector {
+            padding: 12px;
+            border: 2px solid #a8d5bb;
+            border-radius: 6px;
+            background-color: white;
+            color: #2c4a3c;
+            font-size: 16px;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+        
+        .advanced-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .control-button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .control-button:hover {
+            background-color: #45a049;
+        }
+        
+        .control-button.warning {
+            background-color: #f44336;
+        }
+        
+        .control-button.warning:hover {
+            background-color: #d32f2f;
+        }
+        
+        .shortcuts-tip {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .shortcuts-tip h4 {
+            margin: 0 0 10px 0;
+            color: #2e7d32;
+        }
+        
+        .shortcuts-tip ul {
+            margin: 0;
+            padding-left: 20px;
+            columns: 2;
+        }
+        
+        .shortcuts-tip li {
+            color: #1b5e20;
+            margin: 5px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .shortcuts-tip ul {
+                columns: 1;
+            }
+        }
+        
+        /* 暗色主题样式 */
+        body.dark-theme {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        .dark-theme .container {
+            background-color: #2d2d2d;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dark-theme .input-group {
+            background-color: #3d3d3d;
+            border-color: #4d4d4d;
+        }
+        
+        .dark-theme #videoUrl {
+            background-color: #2d2d2d;
+            border-color: #4d4d4d;
+            color: #e0e0e0;
+        }
+        
+        .dark-theme .quality-selector,
+        .dark-theme .speed-selector,
+        .dark-theme .source-selector {
+            background-color: #2d2d2d;
+            border-color: #4d4d4d;
+            color: #e0e0e0;
+        }
+        
+        /* 弹幕样式 */
+        .danmu-container {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .danmu-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #a8d5bb;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .danmu-send {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .danmu {
+            position: absolute;
+            white-space: nowrap;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            font-size: 20px;
+            pointer-events: none;
+        }
+        
+        .theme-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            visibility: visible;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        
+        .theme-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            cursor: pointer;
+            background-color: #fff;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .theme-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .theme-button.active {
+            border-color: #4CAF50;
+        }
+        
+        /* 主题颜色定义 */
+        body.theme-light {
+            background-color: #f0f7f4;
+        }
+        
+        body.theme-dark {
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        
+        body.theme-green {
+            background-color: #e8f5e9;
+        }
+        
+        body.theme-blue {
+            background-color: #e3f2fd;
+        }
+        
+        body.theme-yellow {
+            background-color: #fff8e1;
+        }
+        
+        .stats-container {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #e3f2fd;
+            border-radius: 8px;
+            border: 1px solid #bbdefb;
+        }
+        
+        .stats-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .stat-item {
+            background-color: #fff;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-platform {
+            color: #1976d2;
+            font-weight: 500;
+        }
+        
+        .stat-count {
+            color: #2196f3;
+            font-size: 0.9em;
+        }
+        
+        .dark-theme .stats-container {
+            background-color: #1a237e;
+            border-color: #283593;
+        }
+        
+        .dark-theme .stat-item {
+            background-color: #283593;
+        }
+        
+        .dark-theme .stat-platform {
+            color: #90caf9;
+        }
+        
+        .dark-theme .stat-count {
+            color: #64b5f6;
+        }
+        
+        .emoji-scene {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+        }
+        
+        .emoji-character {
+            font-size: 64px;
+            animation: wave 2s ease-in-out infinite;
+        }
+        
+        .emoji-items {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .emoji-items .item {
+            font-size: 32px;
+            transition: all 0.3s ease;
+        }
+        
+        .emoji-items .crayon {
+            animation: rotate 3s linear infinite;
+        }
+        
+        .emoji-items .palette {
+            animation: float 2s ease-in-out infinite;
+        }
+        
+        .emoji-items .star {
+            animation: twinkle 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes wave {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+        
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        
+        /* 添加边框装饰 */
+        .container::before,
+        .container::after {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            pointer-events: none;
+        }
+        
+        /* 左上角和右上角装饰 */
+        .corner-decoration {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.2;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .corner-top-left {
+            top: -20px;
+            left: -20px;
+            transform: rotate(-45deg);
+        }
+        
+        .corner-top-right {
+            top: -20px;
+            right: -20px;
+            transform: rotate(45deg);
+        }
+        
+        .corner-bottom-left {
+            bottom: -20px;
+            left: -20px;
+            transform: rotate(-135deg);
+        }
+        
+        .corner-bottom-right {
+            bottom: -20px;
+            right: -20px;
+            transform: rotate(135deg);
+        }
+        
+        /* 边框装饰动画 */
+        @keyframes borderFloat {
+            0%, 100% { transform: translateY(0) rotate(0); }
+            50% { transform: translateY(-5px) rotate(5deg); }
+        }
+        
+        /* 暗色主题适配 */
+        .theme-dark .corner-decoration {
+            opacity: 0.3;
+            color: #4CAF50;
+        }
+        
+        .mini-shinchan {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            background-color: #e8f5e9 !important;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.1) !important;
+            z-index: 2;
+            isolation: isolate;
+        }
+        
+        .mini-shinchan-image {
+            height: 200px;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+            filter: brightness(1) contrast(1);
+            mix-blend-mode: darken;
+        }
+        
+        .mini-shinchan-image:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+        
+        /* 暗色主题下的 mini-shinchan 图片样式 */
+        .theme-dark .mini-shinchan-image {
+            mix-blend-mode: normal;
+            filter: brightness(1) contrast(1);
+        }
+        
+        /* 确保暗色主题下不改变背景色 */
+        .theme-dark .shinchan-image-container,
+        .theme-dark .mini-shinchan {
+            background-color: #e8f5e9 !important;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.1) !important;
+        }
+
+        /* 移除其他主题对这些容器的影响 */
+        .theme-green .shinchan-image-container,
+        .theme-blue .shinchan-image-container,
+        .theme-yellow .shinchan-image-container,
+        .theme-green .mini-shinchan,
+        .theme-blue .mini-shinchan,
+        .theme-yellow .mini-shinchan {
+            background-color: #e8f5e9 !important;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.1) !important;
+        }
+
+        /* 平板适配 (768px - 1024px) */
+        @media (max-width: 1024px) {
+            .container {
+                max-width: 95%;
+                margin: 30px auto;
+                padding: 20px;
+            }
+            
+            .button-group {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .quality-selector,
+            .speed-selector,
+            .source-selector {
+                flex: 1;
+                min-width: 120px;
+            }
+            
+            .advanced-controls {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            
+            .theme-selector {
+                width: 100%;
+                justify-content: center;
+                margin-top: 10px;
+            }
+            
+            #videoPlayer {
+                height: 400px;
+            }
+            
+            .shinchan-image {
+                height: 180px;
+            }
+        }
+
+        /* 手机端适配 (小于768px) */
+        @media (max-width: 768px) {
+            .container {
+                margin: 15px auto;
+                padding: 15px;
+                width: 95%;
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            #parseButton,
+            #addToFavorites,
+            .quality-selector,
+            .speed-selector,
+            .source-selector {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+            
+            .advanced-controls {
+                flex-direction: column;
+            }
+            
+            .control-button {
+                width: 100%;
+            }
+            
+            #videoPlayer {
+                height: 240px;
+            }
+            
+            .stats-list {
+                flex-direction: column;
+            }
+            
+            .stat-item {
+                width: 100%;
+            }
+            
+            .danmu-container {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .danmu-input {
+                width: 100%;
+            }
+            
+            .danmu-send {
+                width: 100%;
+            }
+            
+            .shortcuts-tip ul {
+                columns: 1;
+            }
+            
+            /* 隐藏装饰性元素 */
+            .crayon-decoration,
+            .corner-decoration,
+            .image-decoration {
+                display: none;
+            }
+            
+            .shinchan-image {
+                height: 150px;
+            }
+            
+            /* 优化历史和收藏列表 */
+            .history-item,
+            .favorite-item {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .history-time,
+            .favorite-content {
+                width: 100%;
+                text-align: left;
+            }
+        }
+
+        /* 超小屏幕适配 (小于375px) */
+        @media (max-width: 375px) {
+            .container {
+                margin: 10px auto;
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 18px;
+            }
+            
+            #videoPlayer {
+                height: 200px;
+            }
+            
+            .shinchan-image {
+                height: 120px;
+            }
+            
+            .footer {
+                font-size: 12px;
+                padding: 10px;
+            }
+            
+            .tip {
+                font-size: 12px;
+            }
+        }
+
+        /* 优化输入框在移动端的体验 */
+        @media (max-width: 768px) {
+            #videoUrl {
+                font-size: 14px;
+                padding: 10px;
+            }
+            
+            #videoUrl::placeholder {
+                font-size: 13px;
+            }
+            
+            /* 优化按钮触摸区域 */
+            button,
+            select {
+                min-height: 44px; /* 确保触摸区域足够大 */
+            }
+            
+            /* 优化选择器在移动端的显示 */
+            select {
+                padding: 10px;
+                font-size: 14px;
+            }
+        }
+
+        /* 优化暗色主题在移动端的显示 */
+        @media (max-width: 768px) {
+            .theme-dark .container {
+                background-color: #1a1a1a;
+            }
+            
+            .theme-dark .input-group {
+                background-color: #2d2d2d;
+            }
+            
+            .theme-dark #videoUrl {
+                background-color: #333;
+            }
+        }
+
+        /* 添加平滑滚动效果 */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* 优化触摸操作 */
+        @media (hover: none) and (pointer: coarse) {
+            button:hover,
+            .theme-button:hover,
+            .history-item:hover,
+            .favorite-item:hover {
+                transform: none;
+            }
+            
+            /* 增加触摸反馈 */
+            button:active,
+            .theme-button:active {
+                transform: scale(0.98);
+            }
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        #parseButton,
+        #addToFavorites,
+        .control-button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 44px;
+        }
+
+        #parseButton {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #parseButton:hover {
+            background-color: #45a049;
+        }
+
+        #addToFavorites {
+            background-color: #FF9800;
+            color: white;
+        }
+
+        #addToFavorites:hover {
+            background-color: #F57C00;
+        }
+
+        .control-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .control-button:hover {
+            background-color: #45a049;
+        }
+
+        .control-button.warning {
+            background-color: #f44336;
+        }
+
+        .control-button.warning:hover {
+            background-color: #d32f2f;
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .button-group {
+                flex-wrap: wrap;
+            }
+            
+            #parseButton,
+            #addToFavorites,
+            .control-button {
+                width: 100%;
+                margin-bottom: 8px;
+            }
+        }
+
+        /* 移动端优化 */
+        @media (max-width: 768px) {
+            .theme-selector {
+                display: none;
+            }
+        }
+
+        /* 触摸设备的活跃状态 */
+        @media (hover: none) {
+            .theme-button:active {
+                transform: scale(0.95);
+                opacity: 0.8;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="corner-decoration corner-top-left">🎬</div>
+        <div class="corner-decoration corner-top-right">📺</div>
+        <div class="corner-decoration corner-bottom-left">🎮</div>
+        <div class="corner-decoration corner-bottom-right">🎨</div>
+        <div class="crayon-decoration shinchan-left"></div>
+        <div class="crayon-decoration shinchan-right"></div>
+        <div class="crayon-border"></div>
+        <div class="shinchan-header">✏ 蜡笔小新陪你看视频 ✏️</div>
+        <div class="mini-shinchan">
+            <img src="images/xiao.png" alt="蜡笔小新" class="mini-shinchan-image">
+        </div>
+        <h1>🎬 小徐视频解析工具</h1>
+        <div class="input-group">
+            <input type="text" id="videoUrl" placeholder="请输入视频链接（支持腾讯、爱奇艺、优酷、芒果TV）">
+            <div class="button-group">
+                <button id="parseButton">解析播放</button>
+                <button id="addToFavorites" class="favorite-button">收藏</button>
+                <button id="refreshPlayer" class="control-button">刷新播放器</button>
+                <button id="fullScreen" class="control-button">全屏播放</button>
+                <button id="clearCache" class="control-button warning">清除缓存</button>
+            </div>
+            <div class="theme-selector">
+                <button type="button" class="theme-button" data-theme="light">🌞</button>
+                <button type="button" class="theme-button" data-theme="dark">🌙</button>
+                <button type="button" class="theme-button" data-theme="green">🌿</button>
+                <button type="button" class="theme-button" data-theme="blue">💧</button>
+                <button type="button" class="theme-button" data-theme="yellow">🌻</button>
+            </div>
+        </div>
+        <div id="loading" class="loading">
+            正在解析中，请稍候...
+            <br>
+            <small>如果长时间无响应，将自动切换其他线路</small>
+        </div>
+        <div id="message" class="message"></div>
+        <iframe id="videoPlayer" allowfullscreen allow="autoplay; fullscreen"></iframe>
+        <div class="history-container">
+            <h3>观看历史</h3>
+            <div id="historyList" class="history-list"></div>
+        </div>
+        <div class="favorites-container">
+            <h3>我的收藏</h3>
+            <div id="favoritesList" class="favorites-list"></div>
+        </div>
+        <div class="stats-container">
+            <h3>播放统计</h3>
+            <div id="playStats" class="stats-list"></div>
+        </div>
+        <div class="shinchan-image-container">
+            <span class="image-decoration decoration-left">✏️</span>
+            <img src="images/shinchan.png" alt="蜡笔小新" class="shinchan-image">
+            <span class="image-decoration decoration-right">✏️</span>
+        </div>
+        <div class="shinchan-footer">
+            (〃'▽'〃)
+        </div>
+        <div class="footer">
+            小徐视频解析 | 使用更快更稳
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html> 
