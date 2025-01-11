@@ -85,24 +85,23 @@ document.addEventListener('DOMContentLoaded', function() {
     async function tryParseVideo(videoUrl) {
         showLoading(true);
         showMessage('正在解析...', 'info');
+        updateApiStatus();
         
         try {
-            // 构建解析URL
             let parseUrl = API_LIST[currentApiIndex] + encodeURIComponent(videoUrl);
-            console.log('尝试解析:', parseUrl); // 添加日志
+            console.log('尝试解析:', parseUrl);
             
-            // 设置iframe
             videoPlayer.src = parseUrl;
             
-            // 等待加载完成
             await new Promise((resolve, reject) => {
                 videoPlayer.onload = resolve;
                 videoPlayer.onerror = reject;
-                setTimeout(reject, 10000); // 10秒超时
+                setTimeout(reject, 10000);
             });
             
             showMessage('解析成功', 'success');
             showLoading(false);
+            localStorage.setItem(API_PRIORITY_KEY, currentApiIndex.toString());
             
         } catch (error) {
             console.error('解析失败:', error);
@@ -164,7 +163,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateApiStatus() {
         const statusEl = document.getElementById('apiStatus');
-        statusEl.textContent = `当前使用播放源: ${currentApiIndex + 1}/${API_LIST.length}`;
+        if (statusEl) {
+            statusEl.textContent = `当前使用播放源: ${currentApiIndex + 1}/${API_LIST.length}`;
+        }
     }
 
     // 添加缓检查功能

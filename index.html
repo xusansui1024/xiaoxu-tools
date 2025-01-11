@@ -1166,6 +1166,16 @@
                 opacity: 0.8;
             }
         }
+
+        .api-status {
+            text-align: center;
+            margin-top: 10px;
+            color: #557b6c;
+            font-size: 14px;
+            padding: 5px;
+            background-color: #f8faf9;
+            border-radius: 4px;
+        }
     </style>
 </head>
 <body>
@@ -1191,6 +1201,7 @@
                 <button id="fullScreen" class="control-button">全屏播放</button>
                 <button id="clearCache" class="control-button warning">清除缓存</button>
             </div>
+            <div id="apiStatus" class="api-status"></div>
             <div class="theme-selector">
                 <button type="button" class="theme-button" data-theme="light">🌞</button>
                 <button type="button" class="theme-button" data-theme="dark">🌙</button>
