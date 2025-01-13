@@ -13,7 +13,8 @@ const STATS_KEY = 'play_statistics';
 const VIDEO_INFO_KEY = 'video_info';
 
 function isMobile() {
-    return window.innerWidth <= 768;
+    return window.innerWidth <= 768 || 
+           /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -35,8 +36,8 @@ document.addEventListener('DOMContentLoaded', function() {
         'https://okjx.cc/?url='                    // 保留原来稳定的线路
     ];
     
-    let currentApiIndex = 0;
-    let lastUrl = '';
+    // 根据设备类型选择初始 API
+    let currentApiIndex = isMobile() ? 1 : 0;  // 移动端使用第二个API，桌面端使用第一个API
 
     // 加载上次成功的API索引
     const savedPriority = localStorage.getItem(API_PRIORITY_KEY);
@@ -111,6 +112,11 @@ document.addEventListener('DOMContentLoaded', function() {
         updateApiStatus();
         
         try {
+            // 如果是第一次解析，根据设备类型选择API
+            if (!localStorage.getItem(API_PRIORITY_KEY)) {
+                currentApiIndex = isMobile() ? 1 : 0;
+            }
+            
             let parseUrl = API_LIST[currentApiIndex] + encodeURIComponent(videoUrl);
             console.log('尝试解析:', parseUrl);
             
