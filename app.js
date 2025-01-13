@@ -12,6 +12,10 @@ const DANMU_SPEED = 5000; // 弹幕速度（毫秒）
 const STATS_KEY = 'play_statistics';
 const VIDEO_INFO_KEY = 'video_info';
 
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const videoUrlInput = document.getElementById('videoUrl');
     const parseButton = document.getElementById('parseButton');
@@ -20,18 +24,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化主题选择器
     initThemeSelector();
 
-    // 更新 API_LIST，将已知可用的API放在前面
+    // 更新 API_LIST，恢复原来的顺序
     const API_LIST = [
-        'https://jx.xmflv.com/?url=',         // 已确认可用的API放第一位
-        'https://jx.quankan.app/?url=',
-        'https://jx.m3u8.tv/jiexi/?url=',
-        'https://okjx.cc/?url=',
-        'https://www.pangujiexi.cc/jiexi.php?url=',
-        'https://api.jiexi.la/?url=',
-        'https://jx.jsonplayer.com/player/?url=',
-        'https://jx.bozrc.com:4433/player/?url=',
-        'https://jx.playerjy.com/?url=',
-        'https://jx.blbo.cc:4433/?url='
+        'https://jx.playerjy.com/?url=',           // 已确认可用的API放第一位
+        'https://jx.xmflv.com/?url=',             // 已确认可用的API放第二位
+        'https://jx.aidouer.net/?url=',            // 备用线路1
+        'https://api.jiexi.la/?url=',              // 备用线路2
+        'https://jx.xmflv.com/?url=',              // 保留原来稳定的线路
+        'https://jx.quankan.app/?url=',            // 保留原来稳定的线路
+        'https://okjx.cc/?url='                    // 保留原来稳定的线路
     ];
     
     let currentApiIndex = 0;
@@ -71,7 +72,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // 提取视频信息
         const videoInfo = await extractVideoInfo(videoUrl);
         if (videoInfo) {
             updatePlayStats(videoInfo.platform);
@@ -79,6 +79,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
         lastUrl = videoUrl;
         addToHistory(videoUrl);
+
+        // 设置移动端 User-Agent
+        try {
+            const iframe = document.getElementById('videoPlayer');
+            iframe.onload = function() {
+                try {
+                    // 添加移动端 UA
+                    const mobileUA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1';
+                    
+                    // 尝试修改 iframe 的 UA
+                    if (iframe.contentWindow) {
+                        Object.defineProperty(iframe.contentWindow.navigator, 'userAgent', {
+                            get: function() { return mobileUA; }
+                        });
+                    }
+                } catch(e) {
+                    console.log('UA修改失败:', e);
+                }
+            };
+        } catch(e) {
+            console.log('iframe设置失败:', e);
+        }
+
         await tryParseVideo(videoUrl);
     }
 
@@ -91,14 +114,84 @@ document.addEventListener('DOMContentLoaded', function() {
             let parseUrl = API_LIST[currentApiIndex] + encodeURIComponent(videoUrl);
             console.log('尝试解析:', parseUrl);
             
-            videoPlayer.src = parseUrl;
+            // 修改 iframe 的 User-Agent
+            const mobileUserAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1';
+            
+            const iframe = document.getElementById('videoPlayer');
+            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
+            iframe.onload = function() {
+                try {
+                    iframe.contentWindow.navigator.__defineGetter__('userAgent', function() {
+                        return mobileUserAgent;
+                    });
+                } catch(e) {
+                    console.log('设置 User-Agent 失败', e);
+                }
+            };
+            
+            iframe.src = parseUrl;
+            
+            // 使用 MutationObserver 监听 iframe 内容变化
+            const observer = new MutationObserver(() => {
+                try {
+                    const iframe = document.getElementById('videoPlayer');
+                    
+                    if (!iframe._hasEventListeners) {
+                        iframe._hasEventListeners = true;
+                        console.log('添加事件监听');
+
+                        // 监听 iframe 加载完成
+                        iframe.addEventListener('load', () => {
+                            try {
+                                const iframeDoc = iframe.contentWindow.document;
+                                
+                                // 监听视频事件
+                                const setupVideoEvents = () => {
+                                    const video = iframeDoc.querySelector('video');
+                                    if (video && !video._hasListeners) {
+                                        video._hasListeners = true;
+                                        
+                                        // 保持原始控制栏
+                                        video.controls = true;
+
+                                        // 监听空格键
+                                        document.addEventListener('keydown', (e) => {
+                                            if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
+                                                e.preventDefault();
+                                                if (video.paused) {
+                                                    video.play();
+                                                } else {
+                                                    video.pause();
+                                                }
+                                            }
+                                        });
+                                    }
+                                };
+
+                                // 定期检查视频元素
+                                setInterval(setupVideoEvents, 1000);
+
+                            } catch(e) {
+                                console.log('初始化失败', e);
+                            }
+                        });
+                    }
+                } catch(e) {
+                    console.error('初始化失败:', e);
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
             
             await new Promise((resolve, reject) => {
                 videoPlayer.onload = resolve;
                 videoPlayer.onerror = reject;
                 setTimeout(reject, 10000);
             });
-            
+
             showMessage('解析成功', 'success');
             showLoading(false);
             localStorage.setItem(API_PRIORITY_KEY, currentApiIndex.toString());
@@ -110,21 +203,17 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function handleVideoError() {
-        console.log('当前API索引:', currentApiIndex);
-        console.log('可用API数量:', API_LIST.length);
+        currentApiIndex = (currentApiIndex + 1) % API_LIST.length;
+        console.log('切换到下一个API:', currentApiIndex);
         
-        if (currentApiIndex >= API_LIST.length - 1) {
-            showMessage('所有线路均无法播放，请检查视频链接或稍后重试', 'error');
+        if (currentApiIndex === 0) {
+            showMessage('所有线路解析失败', 'error');
             showLoading(false);
             return;
         }
         
-        currentApiIndex++;
-        showMessage(`切换到线路 ${currentApiIndex + 1}/${API_LIST.length}`, 'info');
-        
-        setTimeout(() => {
-            tryParseVideo(lastUrl);
-        }, 1000);
+        showMessage('当前线路解析失败，正在切换下一个线路...', 'info');
+        tryParseVideo(videoUrlInput.value.trim());
     }
 
     // 其他辅助函数...
@@ -470,9 +559,11 @@ document.addEventListener('DOMContentLoaded', function() {
             if (video) {
                 if (video.paused) {
                     video.play();
+                    togglePauseOverlay(false);
                     showMessage('继续播放', 'success');
                 } else {
                     video.pause();
+                    togglePauseOverlay(true);
                     showMessage('暂停播放', 'success');
                 }
             }
@@ -548,10 +639,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // 如果是移动端，使用默认主题（light）
         if (isMobile) {
             document.body.classList.add('theme-light');
-            return;
+            return;  // 直接返回，不执行后续代码
         }
         
-        // 初始化主题
+        // 以下代码只在电脑端执行
         document.body.classList.add(`theme-${savedTheme}`);
         document.querySelector(`[data-theme="${savedTheme}"]`)?.classList.add('active');
 
@@ -598,6 +689,22 @@ document.addEventListener('DOMContentLoaded', function() {
     function initDanmu() {
         updateDanmuUI();
         
+        // 监听全屏变化
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                // 全屏时确保弹幕容器存在
+                try {
+                    const iframe = document.getElementById('videoPlayer');
+                    const iframeDoc = iframe.contentWindow.document;
+                    if (!iframeDoc.querySelector('.danmu-container')) {
+                        sendDanmu(); // 这会创建弹幕容器
+                    }
+                } catch(e) {
+                    console.log('全屏弹幕初始化失败:', e);
+                }
+            }
+        });
+
         danmuToggle.addEventListener('click', () => {
             danmuEnabled = !danmuEnabled;
             localStorage.setItem(DANMU_KEY, danmuEnabled);
@@ -624,33 +731,68 @@ document.addEventListener('DOMContentLoaded', function() {
         const text = document.getElementById('danmuText').value.trim();
         if (!text) return;
 
-        const danmu = document.createElement('div');
-        danmu.className = 'danmu';
-        danmu.textContent = text;
+        try {
+            const iframe = document.getElementById('videoPlayer');
+            const iframeDoc = iframe.contentWindow.document;
+            
+            // 确保 iframe 中有弹幕容器
+            let danmuContainer = iframeDoc.querySelector('.danmu-container');
+            if (!danmuContainer) {
+                danmuContainer = iframeDoc.createElement('div');
+                danmuContainer.className = 'danmu-container';
+                danmuContainer.style.cssText = `
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    pointer-events: none;
+                    z-index: 999999;
+                `;
+                iframeDoc.body.appendChild(danmuContainer);
 
-        // 随机垂直位置
-        const top = Math.random() * (videoPlayer.clientHeight - 40);
-        danmu.style.top = `${top}px`;
+                // 添加弹幕样式
+                const style = iframeDoc.createElement('style');
+                style.textContent = `
+                    .danmu {
+                        position: absolute;
+                        white-space: nowrap;
+                        color: #fff;
+                        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+                        font-size: 20px;
+                        pointer-events: none;
+                        z-index: 999999;
+                        animation: danmuMove 8s linear;
+                    }
+                    @keyframes danmuMove {
+                        from { transform: translateX(100%); }
+                        to { transform: translateX(-100%); }
+                    }
+                `;
+                iframeDoc.head.appendChild(style);
+            }
 
-        // 设置初始位置和动画
-        danmu.style.left = `${videoPlayer.clientWidth}px`;
-        danmu.style.transform = 'translateX(0)';
-        danmu.style.transition = `transform ${DANMU_SPEED}ms linear`;
+            const danmu = iframeDoc.createElement('div');
+            danmu.className = 'danmu';
+            danmu.textContent = text;
 
-        videoPlayer.appendChild(danmu);
-        
-        // 开始动画
-        requestAnimationFrame(() => {
-            danmu.style.transform = `translateX(-${videoPlayer.clientWidth + danmu.clientWidth}px)`;
-        });
+            // 随机垂直位置
+            const top = Math.random() * 80; // 使用百分比
+            danmu.style.top = `${top}%`;
 
-        // 清除弹幕
-        setTimeout(() => {
-            danmu.remove();
-        }, DANMU_SPEED + 100);
+            danmuContainer.appendChild(danmu);
 
-        // 清空输入框
-        document.getElementById('danmuText').value = '';
+            // 动画结束后移除弹幕
+            danmu.addEventListener('animationend', () => {
+                danmu.remove();
+            });
+
+            // 清空输入框
+            document.getElementById('danmuText').value = '';
+
+        } catch(e) {
+            console.log('发送弹幕失败:', e);
+        }
     }
 
     // 视频信息提取功能
@@ -726,4 +868,26 @@ document.addEventListener('DOMContentLoaded', function() {
     initTheme();
     initDanmu();
     updateStatsUI();
+
+    // 添加一个函数来处理遮罩层的显示和隐藏
+    function togglePauseOverlay(show) {
+        const overlay = document.getElementById('pauseOverlay');
+        if (overlay) {
+            if (show) {
+                overlay.style.display = 'flex';
+                overlay.style.opacity = '1';
+            } else {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '0';
+            }
+            console.log('遮罩层状态:', show ? '显示' : '隐藏');
+        }
+    }
+
+    // 时间格式化函数
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
 }); 
