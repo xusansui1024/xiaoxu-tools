@@ -17,7 +17,50 @@ function isMobile() {
            /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
+// 添加移动端布局控制函数
+function initMobileLayout() {
+    if (isMobile()) {
+        const videoPlayer = document.getElementById('videoPlayer');
+        const container = document.querySelector('.container');
+        
+        // 设置容器样式
+        container.style.cssText = `
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 10px !important;
+            overflow-x: hidden !important;
+            position: relative !important;
+            box-sizing: border-box !important;
+        `;
+        
+        // 设置视频播放器样式
+        videoPlayer.style.cssText = `
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 240px !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        `;
+        
+        // 设置 body 样式防止水平滚动
+        document.body.style.cssText = `
+            overflow-x: hidden !important;
+            width: 100% !important;
+            position: relative !important;
+        `;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // 初始化移动端布局
+    initMobileLayout();
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', initMobileLayout);
+    
     const videoUrlInput = document.getElementById('videoUrl');
     const parseButton = document.getElementById('parseButton');
     const videoPlayer = document.getElementById('videoPlayer');
