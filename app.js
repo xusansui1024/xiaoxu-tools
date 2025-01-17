@@ -1010,25 +1010,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // 添加视频标题提取函数
     async function extractVideoTitle(url) {
         try {
-            const response = await fetch(url);
-            const html = await response.text();
-            let title = '';
+            // 添加代理服务器来解决跨域问题
+            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
             
-            if (url.includes('v.qq.com')) {
-                // 腾讯视频
-                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('-')[0]?.trim() || '';
-            } else if (url.includes('iqiyi.com')) {
-                // 爱奇艺
-                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('-')[0]?.trim() || '';
-            } else if (url.includes('mgtv.com')) {
-                // 芒果TV
-                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('－')[0]?.trim() || '';
-            } else if (url.includes('youku.com')) {
-                // 优酷
-                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('－')[0]?.trim() || '';
+            try {
+                const response = await fetch(proxyUrl);
+                const html = await response.text();
+                let title = '';
+                
+                if (url.includes('v.qq.com')) {
+                    // 腾讯视频
+                    title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('-')[0]?.trim() || '';
+                } else if (url.includes('iqiyi.com')) {
+                    // 爱奇艺
+                    title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('-')[0]?.trim() || '';
+                } else if (url.includes('mgtv.com')) {
+                    // 芒果TV
+                    title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('－')[0]?.trim() || '';
+                } else if (url.includes('youku.com')) {
+                    // 优酷
+                    title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('－')[0]?.trim() || '';
+                }
+                
+                // 如果无法获取标题，生成一个友好的默认标题
+                if (!title || title === url) {
+                    const platform = url.includes('v.qq.com') ? '腾讯视频' :
+                                   url.includes('iqiyi.com') ? '爱奇艺' :
+                                   url.includes('mgtv.com') ? '芒果TV' :
+                                   url.includes('youku.com') ? '优酷' : '视频';
+                    
+                    const id = url.split('/').pop().split('?')[0];
+                    title = `${platform} - ${id}`;
+                }
+                
+                return title;
+            } catch (e) {
+                console.error('提取标题失败:', e);
+                // 返回一个格式化的URL作为标题
+                const platform = url.includes('v.qq.com') ? '腾讯视频' :
+                               url.includes('iqiyi.com') ? '爱奇艺' :
+                               url.includes('mgtv.com') ? '芒果TV' :
+                               url.includes('youku.com') ? '优酷' : '视频';
+                const id = url.split('/').pop().split('?')[0];
+                return `${platform} - ${id}`;
             }
-            
-            return title || url;
         } catch (e) {
             console.error('提取标题失败:', e);
             return url;
