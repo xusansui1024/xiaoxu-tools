@@ -129,7 +129,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         lastUrl = videoUrl;
-        addToHistory(videoUrl);
+        await addToHistory(videoUrl);
 
         // 设置移动端 User-Agent
         try {
@@ -327,11 +327,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // 添加历史记录功能
-    function addToHistory(videoUrl, title = '') {
+    async function addToHistory(videoUrl) {
+        // 提取视频标题
+        const title = await extractVideoTitle(videoUrl);
+        
         let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
         const newEntry = {
             url: videoUrl,
-            title: title || videoUrl,
+            title: title,
             timestamp: Date.now()
         };
         
@@ -355,19 +358,51 @@ document.addEventListener('DOMContentLoaded', function() {
         const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
         
         historyList.innerHTML = history.map(item => `
-            <div class="history-item" data-url="${item.url}">
-                <span class="history-title">${item.title}</span>
-                <span class="history-time">${new Date(item.timestamp).toLocaleString()}</span>
+            <div class="history-item">
+                <div class="history-content" data-url="${item.url}">
+                    <span class="history-title">${item.title}</span>
+                    <span class="history-time">${new Date(item.timestamp).toLocaleString()}</span>
+                </div>
+                <button class="remove-history" data-url="${item.url}">×</button>
             </div>
         `).join('');
+        
+        // 添加点击事件
+        historyList.querySelectorAll('.history-content').forEach(item => {
+            item.addEventListener('click', () => {
+                const url = item.dataset.url;
+                videoUrlInput.value = url;
+                handleParse();
+            });
+        });
+        
+        // 添加删除按钮事件
+        historyList.querySelectorAll('.remove-history').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                removeFromHistory(button.dataset.url);
+            });
+        });
+    }
+
+    // 添加删除历史记录的函数
+    function removeFromHistory(videoUrl) {
+        let history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+        history = history.filter(item => item.url !== videoUrl);
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        updateHistoryUI();
+        showMessage('已从历史记录中移除', 'success');
     }
 
     // 添加收藏夹功能
-    function addToFavorites(videoUrl, title = '') {
+    async function addToFavorites(videoUrl) {
+        // 提取视频标题
+        const title = await extractVideoTitle(videoUrl);
+        
         let favorites = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
         const newFavorite = {
             url: videoUrl,
-            title: title || videoUrl,
+            title: title,
             timestamp: Date.now()
         };
         
@@ -425,10 +460,10 @@ document.addEventListener('DOMContentLoaded', function() {
     updateFavoritesUI();
     
     // 添加收藏按钮事件
-    document.getElementById('addToFavorites').addEventListener('click', () => {
+    document.getElementById('addToFavorites').addEventListener('click', async () => {
         const videoUrl = videoUrlInput.value.trim();
         if (videoUrl) {
-            addToFavorites(videoUrl);
+            await addToFavorites(videoUrl);
         } else {
             showMessage('请先输入视频链接', 'error');
         }
@@ -684,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 主题切换功能
+    // 修改主题切换功能
     function initThemeSelector() {
         const buttons = document.querySelectorAll('.theme-button');
         const savedTheme = localStorage.getItem('preferred-theme') || 'light';
@@ -695,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 如果是移动端，使用默认主题（light）
         if (isMobile) {
             document.body.classList.add('theme-light');
-            return;  // 直接返回，不执行后续代码
+            return;
         }
         
         // 以下代码只在电脑端执行
@@ -704,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         buttons.forEach(button => {
             button.onclick = function(e) {
-                e.preventDefault(); // 阻止默认行为
+                e.preventDefault();
                 const theme = this.getAttribute('data-theme');
                 
                 // 移除所有主题类
@@ -712,6 +747,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // 添加新主题类
                 document.body.classList.add(`theme-${theme}`);
+                
+                // 确保容器内部保持淡蓝色背景
+                const container = document.querySelector('.container');
+                if (container) {
+                    container.style.backgroundColor = '#e3f2fd';
+                    container.style.color = '#2c4a3c';  // 保持文字颜色不变
+                }
+                
+                // 确保历史记录和统计区域保持淡绿色背景
+                const historyContainer = document.querySelector('.history-container');
+                const statsContainer = document.querySelector('.stats-container');
+                if (historyContainer) {
+                    historyContainer.style.backgroundColor = '#e8f5e9';
+                    historyContainer.style.borderColor = '#d0e6d9';
+                }
+                if (statsContainer) {
+                    statsContainer.style.backgroundColor = '#e8f5e9';
+                    statsContainer.style.borderColor = '#d0e6d9';
+                }
+                
+                // 确保输入框和按钮组背景保持白色
+                const inputGroup = document.querySelector('.input-group');
+                if (inputGroup) {
+                    inputGroup.style.backgroundColor = '#e3f2fd';
+                }
                 
                 // 更新按钮状态
                 buttons.forEach(btn => btn.classList.remove('active'));
@@ -945,5 +1005,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    // 添加视频标题提取函数
+    async function extractVideoTitle(url) {
+        try {
+            const response = await fetch(url);
+            const html = await response.text();
+            let title = '';
+            
+            if (url.includes('v.qq.com')) {
+                // 腾讯视频
+                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('-')[0]?.trim() || '';
+            } else if (url.includes('iqiyi.com')) {
+                // 爱奇艺
+                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('-')[0]?.trim() || '';
+            } else if (url.includes('mgtv.com')) {
+                // 芒果TV
+                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('－')[0]?.trim() || '';
+            } else if (url.includes('youku.com')) {
+                // 优酷
+                title = html.match(/<title>(.*?)<\/title>/)?.[1]?.split('－')[0]?.trim() || '';
+            }
+            
+            return title || url;
+        } catch (e) {
+            console.error('提取标题失败:', e);
+            return url;
+        }
     }
 }); 

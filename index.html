@@ -16,7 +16,7 @@
             max-width: 800px;
             margin: 50px auto;
             padding: 30px;
-            background-color: #ffffff;
+            background-color: #e3f2fd;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             position: relative;
@@ -38,6 +38,7 @@
             width: 100%;
             padding: 12px;
             margin-bottom: 15px;
+            background-color: #e3f2fd;
             border: 2px solid #a8d5bb;
             border-radius: 6px;
             font-size: 16px;
@@ -211,29 +212,32 @@
             right: 20%;
         }
         
-        .shinchan-image-container {
+        .shinchan-image-container,
+        .mini-shinchan {
             display: flex;
             justify-content: center;
             margin: 20px 0;
             position: relative;
             overflow: hidden;
             border-radius: 12px;
-            background-color: #e8f5e9 !important;
             padding: 15px;
-            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.1) !important;
-            z-index: 2;
+            z-index: 9999;
             isolation: isolate;
+            position: relative;
+            background-color: white !important;
         }
 
-        .shinchan-image {
+        .shinchan-image,
+        .mini-shinchan-image {
             height: 200px;
             object-fit: contain;
             transition: transform 0.3s ease;
             filter: brightness(1) contrast(1);
-            mix-blend-mode: darken;
+            mix-blend-mode: multiply;
         }
 
-        .shinchan-image:hover {
+        .shinchan-image:hover,
+        .mini-shinchan-image:hover {
             transform: scale(1.05);
             filter: brightness(1.1) contrast(1.1);
         }
@@ -328,7 +332,7 @@
         .history-container {
             margin: 20px 0;
             padding: 15px;
-            background-color: #f8faf9;
+            background-color: #e8f5e9;
             border-radius: 8px;
             border: 1px solid #d0e6d9;
         }
@@ -347,7 +351,7 @@
         }
         
         .history-item:hover {
-            background-color: #e8f5e9;
+            background-color: #c8e6c9;
         }
         
         .history-title {
@@ -654,9 +658,9 @@
         .stats-container {
             margin: 20px 0;
             padding: 15px;
-            background-color: #e3f2fd;
+            background-color: #e8f5e9;
             border-radius: 8px;
-            border: 1px solid #bbdefb;
+            border: 1px solid #d0e6d9;
         }
         
         .stats-list {
@@ -1175,6 +1179,69 @@
             padding: 5px;
             background-color: #f8faf9;
             border-radius: 4px;
+        }
+
+        /* 添加统一的删除按钮样式 */
+        .remove-history,
+        .remove-favorite {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0 8px;
+            transition: color 0.3s ease;
+        }
+
+        .remove-history:hover,
+        .remove-favorite:hover {
+            color: #f44336;
+        }
+
+        .history-item,
+        .favorite-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            cursor: pointer;
+        }
+
+        .history-content,
+        .favorite-content {
+            flex: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-title,
+        .favorite-title {
+            color: #2c4a3c;
+            flex: 1;
+        }
+
+        .history-time,
+        .favorite-time {
+            color: #666;
+            font-size: 0.9em;
+            margin-left: 10px;
+        }
+
+        /* 强制覆盖所有主题的背景色 */
+        .theme-dark .shinchan-image-container,
+        .theme-dark .mini-shinchan,
+        .theme-light .shinchan-image-container,
+        .theme-light .mini-shinchan,
+        .theme-green .shinchan-image-container,
+        .theme-green .mini-shinchan,
+        .theme-blue .shinchan-image-container,
+        .theme-blue .mini-shinchan,
+        .theme-yellow .shinchan-image-container,
+        .theme-yellow .mini-shinchan {
+            background-color: white !important;
+            z-index: 9999 !important;
         }
     </style>
 </head>
