@@ -332,9 +332,9 @@
         .history-container {
             margin: 20px 0;
             padding: 15px;
-            background-color: #e8f5e9;
+            background-color: #e8f5e9 !important;
             border-radius: 8px;
-            border: 1px solid #d0e6d9;
+            border: 1px solid #d0e6d9 !important;
         }
         
         .history-list {
@@ -392,9 +392,9 @@
         .favorites-container {
             margin: 20px 0;
             padding: 15px;
-            background-color: #fff3e0;
+            background-color: #fff3e0 !important;
             border-radius: 8px;
-            border: 1px solid #ffe0b2;
+            border: 1px solid #ffe0b2 !important;
         }
         
         .favorites-list {
@@ -658,9 +658,9 @@
         .stats-container {
             margin: 20px 0;
             padding: 15px;
-            background-color: #e8f5e9;
+            background-color: #e8f5e9 !important;
             border-radius: 8px;
-            border: 1px solid #d0e6d9;
+            border: 1px solid #d0e6d9 !important;
         }
         
         .stats-list {
@@ -1243,6 +1243,20 @@
             background-color: white !important;
             z-index: 9999 !important;
         }
+
+        /* 确保文字颜色始终清晰可见 */
+        .history-container h3,
+        .stats-container h3,
+        .favorites-container h3,
+        .history-title,
+        .history-time {
+            color: #2c4a3c !important;  /* 深绿色文字 */
+        }
+
+        .favorite-title,
+        .favorite-time {
+            color: #e65100 !important;  /* 深橙色文字 */
+        }
     </style>
 </head>
 <body>
@@ -1271,7 +1285,6 @@
             <div id="apiStatus" class="api-status"></div>
             <div class="theme-selector">
                 <button type="button" class="theme-button" data-theme="light">🌞</button>
-                <button type="button" class="theme-button" data-theme="dark">🌙</button>
                 <button type="button" class="theme-button" data-theme="green">🌿</button>
                 <button type="button" class="theme-button" data-theme="blue">💧</button>
                 <button type="button" class="theme-button" data-theme="yellow">🌻</button>

@@ -743,7 +743,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const theme = this.getAttribute('data-theme');
                 
                 // 移除所有主题类
-                document.body.classList.remove('theme-light', 'theme-dark', 'theme-green', 'theme-blue', 'theme-yellow');
+                document.body.classList.remove('theme-light', 'theme-green', 'theme-blue', 'theme-yellow');
                 
                 // 添加新主题类
                 document.body.classList.add(`theme-${theme}`);
@@ -789,7 +789,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function getThemeName(theme) {
         const names = {
             light: '亮色',
-            dark: '暗色',
             green: '绿色',
             blue: '蓝色',
             yellow: '黄色'
