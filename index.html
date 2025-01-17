@@ -658,25 +658,23 @@
         .stats-container {
             margin: 20px 0;
             padding: 15px;
-            background-color: #e8f5e9 !important;
+            background-color: #e8f5e9;
             border-radius: 8px;
-            border: 1px solid #d0e6d9 !important;
+            border: 1px solid #d0e6d9;
         }
         
         .stats-list {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
             gap: 10px;
+            margin-top: 10px;
         }
         
         .stat-item {
             background-color: #fff;
-            padding: 8px 15px;
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
         }
         
         .stat-platform {
@@ -1256,6 +1254,28 @@
         .favorite-title,
         .favorite-time {
             color: #e65100 !important;  /* 深橙色文字 */
+        }
+
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .stats-list {
+                grid-template-columns: 1fr;  /* 移动端单列显示 */
+                padding: 0 5px;  /* 添加左右内边距 */
+            }
+            
+            .stat-item {
+                width: 100%;  /* 确保宽度不超出容器 */
+                box-sizing: border-box;  /* 包含内边距和边框 */
+                margin-bottom: 8px;  /* 添加底部间距 */
+            }
+            
+            .stat-platform {
+                font-size: 14px;  /* 调整平台名称字体大小 */
+            }
+            
+            .stat-count {
+                font-size: 12px;  /* 调整计数字体大小 */
+            }
         }
     </style>
 </head>
