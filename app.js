@@ -158,107 +158,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function tryParseVideo(videoUrl) {
         showLoading(true);
-        showMessage('正在解析...', 'info');
-        updateApiStatus();
         
-        try {
-            // 如果是第一次解析，根据设备类型选择API
-            if (!localStorage.getItem(API_PRIORITY_KEY)) {
-                currentApiIndex = isMobile() ? 1 : 0;
-            }
-            
-            let parseUrl = API_LIST[currentApiIndex] + encodeURIComponent(videoUrl);
-            console.log('尝试解析:', parseUrl);
-            
-            // 修改 iframe 的 User-Agent
-            const mobileUserAgent = 'Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1';
-            
-            const iframe = document.getElementById('videoPlayer');
-            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms');
-            iframe.onload = function() {
-                try {
-                    iframe.contentWindow.navigator.__defineGetter__('userAgent', function() {
-                        return mobileUserAgent;
-                    });
-                } catch(e) {
-                    console.log('设置 User-Agent 失败', e);
-                }
-            };
-            
-            iframe.src = parseUrl;
-            
-            // 使用 MutationObserver 监听 iframe 内容变化
-            const observer = new MutationObserver(() => {
-                try {
-                    const iframe = document.getElementById('videoPlayer');
-                    
-                    if (!iframe._hasEventListeners) {
-                        iframe._hasEventListeners = true;
-                        console.log('添加事件监听');
-
-                        // 监听 iframe 加载完成
-                        iframe.addEventListener('load', () => {
-                            try {
-                                const iframeDoc = iframe.contentWindow.document;
-                                
-                                // 监听视频事件
-                                const setupVideoEvents = () => {
-                                    const video = iframeDoc.querySelector('video');
-                                    if (video && !video._hasListeners) {
-                                        video._hasListeners = true;
-                                        
-                                        // 保持原始控制栏
-                                        video.controls = true;
-
-                                        // 监听空格键
-                                        document.addEventListener('keydown', (e) => {
-                                            if (e.code === 'Space' && document.activeElement.tagName !== 'INPUT') {
-                                                e.preventDefault();
-                                                if (video.paused) {
-                                                    video.play();
-                                                } else {
-                                                    video.pause();
-                                                }
-                                            }
-                                        });
-                                    }
-                                };
-
-                                // 定期检查视频元素
-                                setInterval(setupVideoEvents, 1000);
-
-                            } catch(e) {
-                                console.log('初始化失败', e);
-                            }
-                        });
-                    }
-                } catch(e) {
-                    console.error('初始化失败:', e);
-                }
-            });
-
-            observer.observe(document.body, {
-                childList: true,
-                subtree: true
-            });
-            
-            await new Promise((resolve, reject) => {
-                videoPlayer.onload = resolve;
-                videoPlayer.onerror = reject;
-                setTimeout(reject, 10000);
-            });
-
-            showMessage('解析成功', 'success');
+        // 如果是移动端，强制使用播放源2
+        if (isMobileDevice()) {
+            currentApiIndex = 1;  // 设置为播放源2
+            const api = API_LIST[currentApiIndex];
+            const parseUrl = `${api}${videoUrl}`;
+            videoPlayer.src = parseUrl;
             showLoading(false);
-            localStorage.setItem(API_PRIORITY_KEY, currentApiIndex.toString());
-            
-        } catch (error) {
-            console.error('解析失败:', error);
-            handleVideoError();
+            return;
         }
+
+        // 检查缓存
+        const cachedUrl = checkCache(videoUrl);
+        if (cachedUrl) {
+            videoPlayer.src = cachedUrl;
+            showLoading(false);
+            return;
+        }
+
+        const api = API_LIST[currentApiIndex];
+        const parseUrl = `${api}${videoUrl}`;
+        
+        videoPlayer.src = parseUrl;
+        showLoading(false);
     }
 
     function handleVideoError() {
+        // 如果是移动端，不切换播放源
+        if (isMobileDevice()) {
+            showMessage('当前视频解析失败', 'error');
+            showLoading(false);
+            return;
+        }
+
         currentApiIndex = (currentApiIndex + 1) % API_LIST.length;
         console.log('切换到下一个API:', currentApiIndex);
         
@@ -358,17 +291,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
         
         historyList.innerHTML = history.map(item => `
-            <div class="history-item">
-                <div class="history-content" data-url="${item.url}">
-                    <span class="history-title">${item.title}</span>
-                    <span class="history-time">${new Date(item.timestamp).toLocaleString()}</span>
+            <div class="favorite-item">
+                <div class="favorite-content" data-url="${item.url}">
+                    <span class="favorite-title">${item.title}</span>
+                    <span class="favorite-time">${new Date(item.timestamp).toLocaleString()}</span>
                 </div>
-                <button class="remove-history" data-url="${item.url}">×</button>
+                <button class="remove-favorite" data-url="${item.url}">×</button>
             </div>
         `).join('');
         
         // 添加点击事件
-        historyList.querySelectorAll('.history-content').forEach(item => {
+        historyList.querySelectorAll('.favorite-content').forEach(item => {
             item.addEventListener('click', () => {
                 const url = item.dataset.url;
                 videoUrlInput.value = url;
@@ -377,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // 添加删除按钮事件
-        historyList.querySelectorAll('.remove-history').forEach(button => {
+        historyList.querySelectorAll('.remove-favorite').forEach(button => {
             button.addEventListener('click', (e) => {
                 e.stopPropagation();
                 removeFromHistory(button.dataset.url);
@@ -1057,5 +990,10 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('提取标题失败:', e);
             return url;
         }
+    }
+
+    // 检测是否为移动端
+    function isMobileDevice() {
+        return window.innerWidth <= 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
 }); 
