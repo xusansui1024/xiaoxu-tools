@@ -4,5 +4,6 @@
 
 ## 在线访问
 
-访问地址：https://xusansui1024.github.io/xiaoxu-tools/
+访问地址：http://xiaoxu.website/
+         https://xusansui1024.github.io/xiaoxu-tools/
 
